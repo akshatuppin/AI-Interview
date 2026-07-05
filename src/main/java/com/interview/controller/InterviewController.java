@@ -7,19 +7,18 @@ import org.springframework.web.bind.annotation.*;
 
 import com.interview.dto.InterviewDetailResponse;
 import com.interview.dto.InterviewHistoryResponse;
-import com.interview.dto.InterviewResultResponse;
 import com.interview.dto.QuestionResponse;
 import com.interview.dto.StartInterviewResponse;
 import com.interview.dto.SubmitAnswerRequest;
 import com.interview.dto.interview.InterviewSummaryResponse;
 import com.interview.dto.interview.NextQuestionResponse;
+import com.interview.dto.response.DashboardResponse;
 import com.interview.service.InterviewService;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
 
 
 
@@ -66,9 +65,14 @@ public class InterviewController {
     // }
 
     @GetMapping("/{sessionId}/result")
-    public InterviewResultResponse getInterviewResultResponse(@PathVariable Long sessionId) {
-        return interviewService.getInterviewResult(sessionId);
+    public ResponseEntity<com.interview.dto.response.InterviewResultResponse> getInterviewResultResponse(@PathVariable Long sessionId) {
+        return ResponseEntity.ok(
+            interviewService.getInterviewResult(sessionId)
+        );
     }
+
+    
+    
     
     @GetMapping("/history")
     public List<InterviewHistoryResponse> getInterviewHistory(){
@@ -93,5 +97,12 @@ public class InterviewController {
             interviewService.compeleteInterview(sessionId)
         );
     }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<DashboardResponse> dashboard(){
+
+        return ResponseEntity.ok(interviewService.getDashboard());
+    }
+    
     
 }

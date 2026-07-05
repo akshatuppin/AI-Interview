@@ -1,6 +1,10 @@
 package com.interview.entity;
 
+import com.interview.enums.InterviewStatus;
+
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -14,7 +18,8 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "interview_sessions")
-@Getter @Setter
+@Setter
+@Getter
 @NoArgsConstructor @AllArgsConstructor
 public class InterviewSession extends BaseEntity{
     @Id
@@ -29,7 +34,8 @@ public class InterviewSession extends BaseEntity{
 
     private Double score;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private InterviewStatus status;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -38,4 +44,5 @@ public class InterviewSession extends BaseEntity{
     @ManyToOne
     @JoinColumn(name =  "resume_id")
     private Resume resume;
+
 }

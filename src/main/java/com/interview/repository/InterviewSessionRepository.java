@@ -5,9 +5,9 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.interview.dto.InterviewDetailResponse;
 import com.interview.entity.InterviewSession;
 import com.interview.entity.User;
+import com.interview.enums.InterviewStatus;
 
 @Repository
 public interface InterviewSessionRepository extends JpaRepository<InterviewSession, Long>{
@@ -15,5 +15,12 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
 
     List<InterviewSession> findByUser(User user);
 
-    // InterviewDetailResponse getInterviewDetails(Long sessionId);
+    long countByUserId(Long userId);
+
+    long countByUserIdAndStatus(Long userId, InterviewStatus status);
+
+    List<InterviewSession> findByUserId(Long userId);
+
+    InterviewSession findTopByUserIdOrderByCreatedAtDesc(Long userId);
+
 }

@@ -9,7 +9,8 @@ import org.springframework.stereotype.Service;
 import com.interview.dto.InterviewDetailResponse;
 import com.interview.dto.InterviewHistoryResponse;
 import com.interview.dto.InterviewQuestionDetailResponse;
-import com.interview.dto.InterviewResultResponse;
+import com.interview.dto.response.DashboardResponse;
+import com.interview.dto.response.InterviewResultResponse;
 import com.interview.dto.QuestionResponse;
 import com.interview.dto.StartInterviewResponse;
 import com.interview.dto.SubmitAnswerRequest;
@@ -17,11 +18,13 @@ import com.interview.dto.ai.AnswerEvaluationResponse;
 import com.interview.dto.interview.InterviewSummaryResponse;
 import com.interview.dto.interview.NextQuestionResponse;
 import com.interview.dto.interview.SubmitAnswerResponse;
+import com.interview.dto.response.QuestionResultResponse;
 import com.interview.entity.InterviewQuestion;
 import com.interview.entity.InterviewSession;
 import com.interview.entity.Resume;
 import com.interview.entity.ResumeAnalysis;
 import com.interview.entity.User;
+import com.interview.enums.InterviewStatus;
 import com.interview.repository.InterviewQuestionRepository;
 import com.interview.repository.InterviewSessionRepository;
 import com.interview.repository.ResumeAnalysisRepository;
@@ -32,429 +35,478 @@ import com.interview.service.InterviewService;
 
 import lombok.RequiredArgsConstructor;
 
-
-
 @Service
 @RequiredArgsConstructor
-public class InterviewServiceImpl implements InterviewService{
+public class InterviewServiceImpl implements InterviewService {
 
-    private final ResumeRepository resumeRepository;
+        private final ResumeRepository resumeRepository;
 
-    private final ResumeAnalysisRepository resumeAnalysisRepository;
+        private final ResumeAnalysisRepository resumeAnalysisRepository;
 
-    private final InterviewSessionRepository interviewSessionRepository;
+        private final InterviewSessionRepository interviewSessionRepository;
 
-    private final InterviewQuestionRepository interviewQuestionRepository;
+        private final InterviewQuestionRepository interviewQuestionRepository;
 
-    private final UserRepository userRepository;
+        private final UserRepository userRepository;
 
-    private final AIService aiService;
+        private final AIService aiService;
 
+        @Override
+        public StartInterviewResponse startInterviewResponse(Long resumeId) {
 
-    @Override
-    public StartInterviewResponse startInterviewResponse(Long resumeId) {
-        // TODO Auto-generated method stub
-        
+                Authentication authentication = SecurityContextHolder
+                                .getContext()
+                                .getAuthentication();
 
-        // Gives the information of Current Logged-in User
+                String email = authentication.getName();
 
-        Authentication authentication = 
-                SecurityContextHolder
-                    .getContext()
-                    .getAuthentication();
+                User user = userRepository.findByEmail(email)
+                                .orElseThrow(() -> new RuntimeException(
+                                                "User not found"));
 
-            
-        String email = authentication.getName();
+                Resume resume = resumeRepository.findById(resumeId)
+                                .orElseThrow(() -> new RuntimeException(
+                                                "Resume not found"));
 
-        User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> 
-                        new RuntimeException(
-                            "User not found"
-                        ));
-
-        Resume resume = resumeRepository.findById(resumeId)
-                        .orElseThrow( () ->
-                            new RuntimeException(
-                                "Resume not found"
-                            ));
-
-        ResumeAnalysis analysis = resumeAnalysisRepository
+                ResumeAnalysis analysis = resumeAnalysisRepository
                                 .findByResume(resume)
-                                .orElseThrow(() ->
-                                    new RuntimeException(
-                                        "Analysis resume first"
-                                    ));
+                                .orElseThrow(() -> new RuntimeException(
+                                                "Analysis resume first"));
 
-        String resumeText = """
-                Summary:
-                %s
+                String resumeText = """
+                                Summary:
+                                %s
 
-                Skills:
-                %s
+                                Skills:
+                                %s
 
-                Experience:
-                %s
+                                Experience:
+                                %s
 
-                Projects:
-                %s
+                                Projects:
+                                %s
 
-                Education:
-                %s
-                """.formatted(analysis.getSummary(),
-                                analysis.getSkills(), 
+                                Education:
+                                %s
+                                """.formatted(analysis.getSummary(),
+                                analysis.getSkills(),
                                 analysis.getExperiences(),
                                 analysis.getProjects(),
-                                analysis.getEducation()
-                );
+                                analysis.getEducation());
 
-        InterviewSession session = new InterviewSession();
+                String title = "Java Full Stack Interview";
 
-        session.setUser(user);
-        session.setResume(resume);
-        session.setTitle("Mock Interview");
-        session.setStatus("IN_PROGRESS");
-        session.setAnsweredQuestions(0);
-        session.setScore(0.0);
 
-        InterviewSession savedSession = interviewSessionRepository
-                        .save(session);
+                InterviewSession session = new InterviewSession();
 
-        String title = "Java Full Stack Interview";
+                session.setUser(user);
+                session.setResume(resume);
+                session.setTitle(title);
+                session.setStatus(InterviewStatus.IN_PROGRESS);
+                session.setAnsweredQuestions(0);
+                session.setScore(0.0);
 
-        List<String> questions = aiService.generateInterviewQuestions(resumeText);
+                InterviewSession savedSession = interviewSessionRepository
+                                .save(session);
 
-        int order = 1 ;
+                
+                List<String> questions = aiService.generateInterviewQuestions(resumeText);
+                
+                savedSession.setTotalQuestions(questions.size());
 
-        for(String question : questions){
-            InterviewQuestion iq = new InterviewQuestion();
+                int order = 1;
 
-            iq.setSession(savedSession);
-            iq.setQuestionText(question);
-            iq.setQuestionOrder(order++);
+                for (String question : questions) {
+                        InterviewQuestion iq = new InterviewQuestion();
 
-            interviewQuestionRepository.save(iq);
+                        iq.setSession(savedSession);
+                        iq.setQuestionText(question);
+                        iq.setQuestionOrder(order++);
+
+                        interviewQuestionRepository.save(iq);
+                }
+
+                interviewSessionRepository.save(savedSession);
+
+                return StartInterviewResponse
+                                .builder()
+                                .sessionId(savedSession.getId())
+                                .message("Interview Started Successfully...")
+                                .totalQuestions(questions.size())
+                                // .title()
+                                .build();
         }
 
-        savedSession.setTotalQuestions(questions.size());
+        @Override
+        public List<QuestionResponse> getQuestions(Long sessionId) {
+                // TODO Auto-generated method stub
+                InterviewSession session = interviewSessionRepository
+                                .findById(sessionId)
+                                .orElseThrow(() -> new RuntimeException(
+                                                "Interview session not found"));
 
-        interviewSessionRepository.save(savedSession);
+                List<InterviewQuestion> questions = interviewQuestionRepository
+                                .findAllBySession(session);
 
-        // System.out.println("Title = " + "Java Full Stack Interview");
-
-        return StartInterviewResponse
-                .builder()
-                .sessionId(savedSession.getId())
-                .message("Interview Started Successfully...")
-                .totalQuestions(questions.size())
-                .title(title)
-                .build();
-    }
-
-
-    @Override
-    public List<QuestionResponse> getQuestions(Long sessionId) {
-        // TODO Auto-generated method stub
-        InterviewSession session = interviewSessionRepository
-                            .findById(sessionId)
-                            .orElseThrow(() -> 
-                                new RuntimeException(
-                                    "Interview session not found"
-                                ));
-
-        List<InterviewQuestion> questions = interviewQuestionRepository
-                                    .findAllBySession(session);
-
-        return questions.stream()
-            .map(question ->
-                    QuestionResponse.builder()
-                            .id(question.getId())
-                            .questionText(question.getQuestionText())
-                            .questionOrder(question.getQuestionOrder())
-                            .build()
-            ).toList();
-    }
-
-
-    @Override
-    public SubmitAnswerResponse submitAnswer(Long questionId, SubmitAnswerRequest request) {
-
-        // Fetch the question
-        InterviewQuestion question = interviewQuestionRepository
-                .findById(questionId)
-                .orElseThrow(() ->
-                        new RuntimeException("Question not found"));
-
-        // Get the session
-        InterviewSession session = question.getSession();
-
-        // Evaluate answer using Gemini
-        AnswerEvaluationResponse evaluation = aiService.evaluateAnswer(
-                question.getQuestionText(),
-                request.getAnswer()
-        );
-
-        double score = evaluation.getScore();
-        String feedback = evaluation.getFeedback();
-
-        // Increase answered count only if answering for the first time
-        if (question.getUserAnswer() == null) {
-            session.setAnsweredQuestions(session.getAnsweredQuestions() + 1);
+                return questions.stream()
+                                .map(question -> QuestionResponse.builder()
+                                                .id(question.getId())
+                                                .questionText(question.getQuestionText())
+                                                .questionOrder(question.getQuestionOrder())
+                                                .build())
+                                .toList();
         }
 
-        // Save answer
-        question.setUserAnswer(request.getAnswer());
-        question.setScore(score);
-        question.setFeedback(feedback);
+        @Override
+        public SubmitAnswerResponse submitAnswer(Long questionId, SubmitAnswerRequest request) {
 
-        interviewQuestionRepository.save(question);
+                // Fetch the question
+                InterviewQuestion question = interviewQuestionRepository
+                                .findById(questionId)
+                                .orElseThrow(() -> new RuntimeException("Question not found"));
 
-        // Calculate average score
-        List<InterviewQuestion> questions =
-                interviewQuestionRepository.findBySessionOrderByQuestionOrderAsc(session);
+                // Get the session
+                InterviewSession session = question.getSession();
 
-        double totalScore = questions.stream()
-                .filter(q -> q.getScore() != null)
-                .mapToDouble(InterviewQuestion::getScore)
-                .sum();
+                // Evaluate answer using Gemini
+                AnswerEvaluationResponse evaluation = aiService.evaluateAnswer(
+                                question.getQuestionText(),
+                                request.getAnswer());
 
-        long answeredCount = questions.stream()
-                .filter(q -> q.getScore() != null)
-                .count();
+                double score = evaluation.getScore();
+                String feedback = evaluation.getFeedback();
 
-        double averageScore =
-                answeredCount == 0 ? 0.0 : totalScore / answeredCount;
+                // Increase answered count only if answering for the first time
+                if (question.getUserAnswer() == null) {
+                        session.setAnsweredQuestions(session.getAnsweredQuestions() + 1);
+                }
 
-        session.setScore(averageScore);
+                // Save answer
+                question.setUserAnswer(request.getAnswer());
+                question.setScore(score);
+                question.setFeedback(feedback);
 
-        interviewSessionRepository.save(session);
+                interviewQuestionRepository.save(question);
 
-        // Return response
-        return SubmitAnswerResponse.builder()
-                .score(score)
-                .feedback(feedback)
-                .build();
-    }
+                // Calculate average score
+                List<InterviewQuestion> questions = interviewQuestionRepository
+                                .findBySessionOrderByQuestionOrderAsc(session);
 
-    // private double evaluateAnswer(String answer){
-    //     if(answer == null || answer.isBlank()){
-    //         return 0.0;
-    //     }
+                double totalScore = questions.stream()
+                                .filter(q -> q.getScore() != null)
+                                .mapToDouble(InterviewQuestion::getScore)
+                                .sum();
 
-    //     if(answer.length() > 200){
-    //         return 10.0;
-    //     }
+                long answeredCount = questions.stream()
+                                .filter(q -> q.getScore() != null)
+                                .count();
 
-    //     if(answer.length() > 100){
-    //         return 8.0;
-    //     }
+                double averageScore = answeredCount == 0 ? 0.0 : totalScore / answeredCount;
 
-    //     if(answer.length() > 50){
-    //         return 6.0;
-    //     }
+                averageScore = Math.round(averageScore * 100.0) / 100.0;
 
-    //     return 4.0;
-    // }
+                session.setScore(averageScore);
 
+                interviewSessionRepository.save(session);
 
-    // private String generateFeedback(String answer){
-    //     if(answer == null || answer.isBlank()){
-    //         return "No answer aubmitted";
-    //     }
-
-    //     if(answer.length() > 200){
-    //         return "Excellent answer with detailed explanation.";
-    //     }
-
-    //     if(answer.length() > 100){
-    //         return "Average answer. More details required.";
-    //     }
-
-    //     return "Answer is too short";
-    // }
-
-    // @Override
-    // public void completeInterview(Long sessionId) {
-    //     // TODO Auto-generated method stub
-        
-    //     InterviewSession session = interviewSessionRepository
-    //                                 .findById(sessionId)
-    //                                 .orElseThrow(() -> 
-    //                                     new RuntimeException(
-    //                                         "Session not found"
-    //                                     ));
-
-    //     session.setStatus("COMPLETED");
-    //     interviewSessionRepository.save(session);
-    // }
-
-
-    @Override
-    public InterviewResultResponse getInterviewResult(Long sessionId) {
-        // TODO Auto-generated method stub
-        
-        InterviewSession session = interviewSessionRepository
-                                    .findById(sessionId)
-                                    .orElseThrow( () -> 
-                                        new RuntimeException(
-                                            "Session not found"
-                                        ));
-
-        return InterviewResultResponse
-                .builder()
-                .sessionId(session.getId())
-                .title(session.getTitle())
-                .status(session.getStatus())
-                .totalQuestions(session.getTotalQuestions())
-                .answeredQuestions(session.getAnsweredQuestions())
-                .score(session.getScore())
-                .build();
-    }
-
-
-    @Override
-    public List<InterviewHistoryResponse> getInterviewHistory() {
-        // TODO Auto-generated method stub
-        Authentication authentication = SecurityContextHolder
-                                        .getContext()
-                                        .getAuthentication();
-
-        String email = authentication.getName();
-
-        User user = userRepository
-                    .findByEmail(email)
-                    .orElseThrow(() -> 
-                        new RuntimeException(
-                            "User not found"
-                        ));
-        List<InterviewSession> sessions = interviewSessionRepository
-                                        .findByUser(user);
-
-        return sessions.stream()
-                .map(session ->
-                    InterviewHistoryResponse
-                        .builder()
-                        .sessionId(session.getId())
-                        .title(session.getTitle())
-                        .status(session.getStatus())
-                        .totalQuestions(session.getTotalQuestions())
-                        .answeredQuestions(session.getAnsweredQuestions())
-                        .score(session.getScore())
-                        .build()  
-                )
-                .toList();   
-    }
-
-
-    @Override
-    public InterviewDetailResponse
-    getInterviewDetails(Long sessionId) {
-
-        InterviewSession session =
-                interviewSessionRepository
-                        .findById(sessionId)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Interview Session not found"));
-
-        List<InterviewQuestion> questions =
-                interviewQuestionRepository
-                        .findBySessionOrderByQuestionOrderAsc(
-                                session);
-
-        List<InterviewQuestionDetailResponse>
-                questionResponses =
-                questions.stream()
-                        .map(question ->
-                                InterviewQuestionDetailResponse
-                                        .builder()
-                                        .questionId(
-                                                question.getId())
-                                        .questionText(
-                                                question.getQuestionText())
-                                        .userAnswer(
-                                                question.getUserAnswer())
-                                        .questionOrder(
-                                                question.getQuestionOrder())
-                                        .score(
-                                                question.getScore())
-                                        .feedback(
-                                                question.getFeedback())
-                                        .build())
-                        .toList();
-
-        return InterviewDetailResponse
-                .builder()
-                .sessionId(session.getId())
-                .title(session.getTitle())
-                .status(session.getStatus())
-                .totalQuestions(
-                        session.getTotalQuestions())
-                .answeredQuestions(
-                        session.getAnsweredQuestions())
-                .score(session.getScore())
-                .questions(questionResponses)
-                .build();
-    }
-
-
-    @Override
-    public NextQuestionResponse getNextQuestionResponse(Long sesionId) {
-        // TODO Auto-generated method stub
-        
-        InterviewSession session = interviewSessionRepository
-                    .findById(sesionId)
-                    .orElseThrow( () ->
-                        new RuntimeException("Interview session not found")
-                    );
-
-        List<InterviewQuestion> questions = 
-                interviewQuestionRepository.findBySessionOrderByQuestionOrderAsc(session);
-
-        
-        InterviewQuestion nextQuestion = questions.stream()
-                .filter( q -> q.getUserAnswer() == null || q.getUserAnswer().isBlank())
-                .findFirst()
-                .orElseThrow( () ->
-                    new RuntimeException("Interview completed")
-                );
-
-        return NextQuestionResponse.builder()
-                .questionId(nextQuestion.getId())
-                .questionOrder(nextQuestion.getQuestionOrder()) 
-                .questionText(nextQuestion.getQuestionText())
-                .build();       
-
-    }
-
-
-    @Override
-    public InterviewSummaryResponse compeleteInterview(Long sessionId) {
-        // TODO Auto-generated method stub
-        
-        InterviewSession session = interviewSessionRepository
-                    .findById(sessionId)
-                    .orElseThrow( () ->
-                        new RuntimeException("Intterview Session not Found..")
-                    );
-
-
-        if(!session.getAnsweredQuestions().equals(session.getTotalQuestions())){
-            throw new RuntimeException("Interview is not completed yet.");
+                // Return response
+                return SubmitAnswerResponse.builder()
+                                .score(score)
+                                .feedback(feedback)
+                                .build();
         }
 
-        session.setStatus("COMPLETED");
+        // private double evaluateAnswer(String answer){
+        // if(answer == null || answer.isBlank()){
+        // return 0.0;
+        // }
 
-        interviewSessionRepository.save(session);
+        // if(answer.length() > 200){
+        // return 10.0;
+        // }
 
-        return InterviewSummaryResponse.builder()
-                .sessionId(session.getId())
-                .status(session.getStatus())
-                .totalQuestions(session.getTotalQuestions())
-                .answeredQuestions(session.getAnsweredQuestions())
-                .averageScore(session.getScore())
-                .message("Interview Completed successfully")
-                .build();
+        // if(answer.length() > 100){
+        // return 8.0;
+        // }
 
-    }
-   
+        // if(answer.length() > 50){
+        // return 6.0;
+        // }
+
+        // return 4.0;
+        // }
+
+        // private String generateFeedback(String answer){
+        // if(answer == null || answer.isBlank()){
+        // return "No answer aubmitted";
+        // }
+
+        // if(answer.length() > 200){
+        // return "Excellent answer with detailed explanation.";
+        // }
+
+        // if(answer.length() > 100){
+        // return "Average answer. More details required.";
+        // }
+
+        // return "Answer is too short";
+        // }
+
+        // @Override
+        // public void completeInterview(Long sessionId) {
+        // // TODO Auto-generated method stub
+
+        // InterviewSession session = interviewSessionRepository
+        // .findById(sessionId)
+        // .orElseThrow(() ->
+        // new RuntimeException(
+        // "Session not found"
+        // ));
+
+        // session.setStatus("COMPLETED");
+        // interviewSessionRepository.save(session);
+        // }
+
+        @Override
+        public InterviewResultResponse getInterviewResult(Long sessionId) {
+                // TODO Auto-generated method stub
+
+                InterviewSession session = interviewSessionRepository
+                                .findById(sessionId)
+                                .orElseThrow(() -> new RuntimeException(
+                                                "Interview not found"));
+
+                if (session.getStatus() != InterviewStatus.COMPLETED) {
+                        throw new RuntimeException("Interview is not completed");
+                }
+
+                List<InterviewQuestion> questions = interviewQuestionRepository
+                                .findBySessionOrderByQuestionOrderAsc(session);
+
+                List<QuestionResultResponse> resultQuestions = questions.stream()
+                                .map(q -> QuestionResultResponse.builder()
+                                                .questionOrder(q.getQuestionOrder())
+                                                .questionText(q.getQuestionText())
+                                                .userAnswer(q.getUserAnswer())
+                                                .score(q.getScore())
+                                                .feedback(q.getFeedback())
+                                                .build())
+                                .toList();
+
+                String overallFeedback;
+
+                if (session.getScore() >= 9) {
+                        overallFeedback = "OutStanding performance.";
+                } else if (session.getScore() >= 8) {
+                        overallFeedback = "Excellent performance.";
+                } else if (session.getScore() >= 7) {
+                        overallFeedback = "Good performance";
+                } else if (session.getScore() >= 6) {
+                        overallFeedback = "Average performance. More practice recommended.";
+                } else {
+                        overallFeedback = "Needs improvement";
+                }
+
+                return InterviewResultResponse
+                                .builder()
+                                .sessionId(session.getId())
+                                .title(session.getTitle())
+                                .status(session.getStatus())
+                                .totalQuestions(session.getTotalQuestions())
+                                // .totalQuestions(questions.size())
+                                .answeredQuestions(session.getAnsweredQuestions())
+                                .averageScore(session.getScore())
+                                .overallFeedback(overallFeedback)
+                                .questions(resultQuestions)
+                                .build();
+        }
+
+        @Override
+        public List<InterviewHistoryResponse> getInterviewHistory() {
+                // TODO Auto-generated method stub
+                Authentication authentication = SecurityContextHolder
+                                .getContext()
+                                .getAuthentication();
+
+                String email = authentication.getName();
+
+                User user = userRepository
+                                .findByEmail(email)
+                                .orElseThrow(() -> new RuntimeException(
+                                                "User not found"));
+                List<InterviewSession> sessions = interviewSessionRepository
+                                .findByUser(user);
+
+                return sessions.stream()
+                                .map(session -> InterviewHistoryResponse
+                                                .builder()
+                                                .sessionId(session.getId())
+                                                .title(session.getTitle())
+                                                .status(session.getStatus())
+                                                .totalQuestions(session.getTotalQuestions())
+                                                .answeredQuestions(session.getAnsweredQuestions())
+                                                .score(session.getScore())
+                                                .build())
+                                .toList();
+
+                // return sessions.stream()
+                // .map(session - >
+                // InterviewHistoryResponse
+                // .builder()
+                // .sessionId(session.getId())
+                // )
+        }
+
+        @Override
+        public InterviewDetailResponse getInterviewDetails(Long sessionId) {
+
+                InterviewSession session = interviewSessionRepository
+                                .findById(sessionId)
+                                .orElseThrow(() -> new RuntimeException(
+                                                "Interview Session not found"));
+
+                List<InterviewQuestion> questions = interviewQuestionRepository
+                                .findBySessionOrderByQuestionOrderAsc(
+                                                session);
+
+                List<InterviewQuestionDetailResponse> questionResponses = questions.stream()
+                                .map(question -> InterviewQuestionDetailResponse
+                                                .builder()
+                                                .questionId(
+                                                                question.getId())
+                                                .questionText(
+                                                                question.getQuestionText())
+                                                .userAnswer(
+                                                                question.getUserAnswer())
+                                                .questionOrder(
+                                                                question.getQuestionOrder())
+                                                .score(
+                                                                question.getScore())
+                                                .feedback(
+                                                                question.getFeedback())
+                                                .build())
+                                .toList();
+
+                return InterviewDetailResponse
+                                .builder()
+                                .sessionId(session.getId())
+                                .title(session.getTitle())
+                                .status(session.getStatus())
+                                .totalQuestions(
+                                                session.getTotalQuestions())
+                                .answeredQuestions(
+                                                session.getAnsweredQuestions())
+                                .score(session.getScore())
+                                .questions(questionResponses)
+                                .build();
+        }
+
+        @Override
+        public NextQuestionResponse getNextQuestionResponse(Long sesionId) {
+                // TODO Auto-generated method stub
+
+                InterviewSession session = interviewSessionRepository
+                                .findById(sesionId)
+                                .orElseThrow(() -> new RuntimeException("Interview session not found"));
+
+                List<InterviewQuestion> questions = interviewQuestionRepository
+                                .findBySessionOrderByQuestionOrderAsc(session);
+
+                InterviewQuestion nextQuestion = questions.stream()
+                                .filter(q -> q.getUserAnswer() == null || q.getUserAnswer().isBlank())
+                                .findFirst()
+                                .orElseThrow(() -> new RuntimeException("Interview completed"));
+
+                return NextQuestionResponse.builder()
+                                .questionId(nextQuestion.getId())
+                                .questionOrder(nextQuestion.getQuestionOrder())
+                                .questionText(nextQuestion.getQuestionText())
+                                .build();
+
+        }
+
+        @Override
+        public InterviewSummaryResponse compeleteInterview(Long sessionId) {
+                // TODO Auto-generated method stub
+
+                InterviewSession session = interviewSessionRepository
+                                .findById(sessionId)
+                                .orElseThrow(() -> new RuntimeException("Intterview Session not Found.."));
+
+                if (!session.getAnsweredQuestions().equals(session.getTotalQuestions())) {
+                        throw new RuntimeException("Interview is not completed yet.");
+                }
+
+                session.setStatus(InterviewStatus.COMPLETED);
+
+                interviewSessionRepository.save(session);
+
+                return InterviewSummaryResponse.builder()
+                                .sessionId(session.getId())
+                                .status(session.getStatus())
+                                .totalQuestions(session.getTotalQuestions())
+                                .answeredQuestions(session.getAnsweredQuestions())
+                                .averageScore(session.getScore())
+                                .message("Interview Completed successfully")
+                                .build();
+
+        }
+
+        @Override
+        public DashboardResponse getDashboard() {
+
+                User user = getCurrentUser();
+
+                long totalInterviews = interviewSessionRepository.countByUserId(user.getId());
+
+                long completedInterviews = interviewSessionRepository.countByUserIdAndStatus(user.getId(),
+                                InterviewStatus.COMPLETED);
+
+                long inProgressInterviews = interviewSessionRepository.countByUserIdAndStatus(user.getId(),
+                                InterviewStatus.IN_PROGRESS);
+
+                List<InterviewSession> session = interviewSessionRepository.findByUserId(user.getId());
+
+                double averageScore = session.stream()
+                                .filter(s -> s.getScore() != null)
+                                .mapToDouble(InterviewSession::getScore)
+                                .average()
+                                .orElse(0.0);
+
+                // List<InterviewSession> latest =
+                // interviewSessionRepository.findByUserId(user.getId());
+
+                InterviewSession latest = interviewSessionRepository.findTopByUserIdOrderByCreatedAtDesc(
+                                user.getId());
+                InterviewHistoryResponse recentInterview = null;
+
+                if (latest != null) {
+                        recentInterview = InterviewHistoryResponse.builder()
+                                        .sessionId(latest.getId())
+                                        .title(latest.getTitle())
+                                        .status(latest.getStatus())
+                                        .score(latest.getScore())
+                                        .answeredQuestions(latest.getAnsweredQuestions())
+                                        .totalQuestions(latest.getTotalQuestions())
+                                        .build();
+                }
+
+                return DashboardResponse.builder()
+                                .totalInterviews(totalInterviews)
+                                .completedInterviews(completedInterviews)
+                                .inProgressInterviews(inProgressInterviews)
+                                .averageScore(averageScore)
+                                .recentInterview(recentInterview)
+                                .build();
+        }
+
+        private User getCurrentUser() {
+                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+                String email = authentication.getName();
+
+                return userRepository.findByEmail(email)
+                                .orElseThrow(() -> new RuntimeException("User not found"));
+        }
+
 }

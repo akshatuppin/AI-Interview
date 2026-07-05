@@ -4,13 +4,13 @@ import java.util.List;
 
 import com.interview.dto.InterviewDetailResponse;
 import com.interview.dto.InterviewHistoryResponse;
-import com.interview.dto.InterviewResultResponse;
 import com.interview.dto.QuestionResponse;
 import com.interview.dto.StartInterviewResponse;
 import com.interview.dto.SubmitAnswerRequest;
 import com.interview.dto.interview.InterviewSummaryResponse;
 import com.interview.dto.interview.NextQuestionResponse;
 import com.interview.dto.interview.SubmitAnswerResponse;
+import com.interview.dto.response.DashboardResponse;
 
 public interface InterviewService {
 
@@ -23,7 +23,7 @@ public interface InterviewService {
 
     // void completeInterview(Long sessionId);
 
-    InterviewResultResponse getInterviewResult(Long sessionId);
+    com.interview.dto.response.InterviewResultResponse getInterviewResult(Long sessionId);
 
     List<InterviewHistoryResponse> getInterviewHistory();
 
@@ -32,5 +32,9 @@ public interface InterviewService {
     NextQuestionResponse getNextQuestionResponse(Long sesionId);
 
     InterviewSummaryResponse compeleteInterview(Long sessionId); 
+
+    // InterviewResultResponse getInterviewResult(Long sessionId);
+
+    DashboardResponse getDashboard();
 
 }

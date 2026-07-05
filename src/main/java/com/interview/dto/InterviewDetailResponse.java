@@ -3,6 +3,7 @@ package com.interview.dto;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.interview.enums.InterviewStatus;
 
 import lombok.Builder;
 import lombok.Data;
@@ -25,7 +26,7 @@ public class InterviewDetailResponse {
 
     private String title;
 
-    private String status;
+    private InterviewStatus status;
 
     private Integer totalQuestions;
 

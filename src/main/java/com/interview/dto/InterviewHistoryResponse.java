@@ -1,5 +1,7 @@
 package com.interview.dto;
 
+import com.interview.enums.InterviewStatus;
+
 import lombok.Builder;
 import lombok.Data;
 
@@ -11,7 +13,7 @@ public class InterviewHistoryResponse {
 
     private String title;
 
-    private String status;
+    private InterviewStatus status;
 
     private Integer totalQuestions;
 
