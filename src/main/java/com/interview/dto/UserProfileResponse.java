@@ -3,6 +3,7 @@ package com.interview.dto;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+
 import lombok.Builder;
 import lombok.Data;
 
@@ -12,7 +13,13 @@ import lombok.Data;
     "lastName",
     "email",
     "phoneNumber",
-    "role"
+    "role",
+    "collegeName",
+    "branch",
+    "graduationYear",
+    "githubUrl",
+    "linkedinUrl",
+    "protfolioUrl"
 })
 
 
@@ -32,4 +39,16 @@ public class UserProfileResponse {
     private String phoneNumber;
 
     private String role ;
+
+    private String collegeName;
+
+    private String branch;
+
+    private String graduationYear;
+
+    private String githubUrl;
+
+    private String linkedinUrl;
+
+    private String protfolioUrl;
 }
