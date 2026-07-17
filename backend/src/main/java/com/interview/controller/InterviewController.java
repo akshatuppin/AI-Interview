@@ -167,9 +167,5 @@ public class InterviewController {
         return ResponseEntity.ok(
             interviewService.compeleteInterview(sessionId)
         );
-    }
-
-    
-    
-    
+    }    
 }
