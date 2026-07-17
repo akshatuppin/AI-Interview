@@ -1,4 +1,75 @@
+<div class="login-container">
 
-<h1>Login Page</h1>
+    <div class="login-card">
+        
+        <h1>AI Mock Interview</h1>
+        
+        <h3>Welcome Back</h3>
 
-<p>Welcome to AI Mock Interview Platform</p>
+        <p>Login to continue your interview journey.</p>
+
+        <form [formGroup]="loginForm"
+                (ngSubmit)="onSubmit()">
+            <h2>Login</h2>
+
+            <label>Email</label>
+
+            <br>
+
+            <input type="email"
+                formControlName="email"
+                placeholder="Entter Email">
+
+            <small style="color: red">
+
+                @if (email?.errors?.['required']){
+                    Email is required
+                }
+
+                @if (email?.errors?.['email']) {
+                    Invalid Email
+                }
+            </small>
+
+            <br><br>
+
+            <label>Password</label>
+
+            <br>
+
+            <input type="password"
+                    formControlName="password"
+                    placeholder="Enter Password">
+
+            <small style="color: red">
+
+                @if (password?.errors?.['required']) {
+                    Password is required
+                }
+
+                @if (password?.errors?.['minlength']) {
+                    Password must at least 6 characters
+                }
+
+            </small>
+
+            <br><br>
+
+            <button 
+                type="submit"
+                [disabled]="loginForm.invalid">
+                    Login
+
+            </button>
+
+        </form>
+
+        <p class="register-link">
+            Don't have an account?
+
+            <a routerLink="/register">Register</a>
+
+        </p>
+
+    </div>
+</div>
