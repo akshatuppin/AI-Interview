@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -33,7 +32,6 @@ import com.interview.repository.UserRepository;
 import com.interview.service.ResumeService;
 
 import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.pdmodel.PDDocument;
 import lombok.RequiredArgsConstructor;
 
 import org.apache.pdfbox.text.PDFTextStripper;
