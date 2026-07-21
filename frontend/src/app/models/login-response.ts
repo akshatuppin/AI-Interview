@@ -5,5 +5,5 @@ export interface LoginResponse{
 
     email: string;
 
-    roel: string;
+    role: string;
 }

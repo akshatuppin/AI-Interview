@@ -7,7 +7,6 @@ import { LoginRequest } from '../../models/login-request';
 
 @Component({
   selector: 'app-login',
-  standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './login.html',
   styleUrl: './login.css',
@@ -38,8 +37,6 @@ export class Login {
   }
 
   
-
-
   onSubmit(){
     
     if(this.loginForm.invalid){
@@ -59,7 +56,7 @@ export class Login {
 
         localStorage.setItem("email", response.email);
 
-        localStorage.setItem("role", response.roel);
+        localStorage.setItem("role", response.role);
 
         console.log("Login Successfull");
 

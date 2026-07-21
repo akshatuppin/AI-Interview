@@ -1,1 +1,112 @@
-<p>dashboard works!</p>
+@if(dashboard()){
+
+<div class="dashboard-container">
+
+    <h1>Welcome Back 👋</h1>
+
+    <p class="subtitle">
+        Practice Today. Crack Tomorrow.
+    </p>
+
+    <div class="cards">
+
+        <div class="card">
+
+            <h3>Total Interviews</h3>
+
+            <h2>{{dashboard()!.totalInterviews}}</h2>
+
+        </div>
+
+        <div class="card">
+
+            <h3>Completed</h3>
+
+            <h2>{{dashboard()!.completedInterviews}}</h2>
+
+        </div>
+
+        <div class="card">
+
+            <h3>In Progress</h3>
+
+            <h2>{{dashboard()!.inProgressInterviews}}</h2>
+
+        </div>
+
+        <div class="card">
+
+            <h3>Average Score</h3>
+
+            <h2>{{dashboard()!.averageScore}}</h2>
+
+        </div>
+
+    </div>
+
+    <div class="recent">
+
+        <h2>Recent Interview</h2>
+
+        <p>
+
+            <strong>Title :</strong>
+
+            {{dashboard()!.recentInterview.title}}
+
+        </p>
+
+        <p>
+
+            <strong>Status :</strong>
+
+            {{dashboard()!.recentInterview.status}}
+
+        </p>
+
+        <p>
+
+            <strong>Score :</strong>
+
+            {{dashboard()!.recentInterview.score}}
+
+        </p>
+
+        <button
+        (click)="continueInterview(dashboard()!.recentInterview.sessionId)">
+            Continue Interview
+        </button>
+
+    </div>
+
+    <div class="actions">
+
+        <button
+        (click)="startInterview()">
+
+            Start New Interview
+
+        </button>
+
+        <button
+        (click)="history()">
+
+            Interview History
+
+        </button>
+
+    </div>
+
+</div>
+
+}
+
+@else{
+
+<div class="loading">
+
+<h2>Loading Dashboard...</h2>
+
+</div>
+
+}

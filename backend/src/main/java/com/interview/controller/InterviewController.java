@@ -12,6 +12,7 @@ import com.interview.dto.StartInterviewResponse;
 import com.interview.dto.SubmitAnswerRequest;
 import com.interview.dto.interview.InterviewSummaryResponse;
 import com.interview.dto.interview.NextQuestionResponse;
+import com.interview.dto.response.DashboardResponse;
 import com.interview.service.InterviewService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -168,4 +169,20 @@ public class InterviewController {
             interviewService.compeleteInterview(sessionId)
         );
     }    
+
+
+    // @Operation(
+    //     summary = "User Dashboard",
+    //     description = "Returns interview statistics, average score, completed interviews and recent interview."
+    // )
+    // @ApiResponses({
+    //     @ApiResponse(responseCode = "200", description = "Dashboard loaded successfully"),
+    //     @ApiResponse(responseCode = "401", description = "Unauthorized")
+    // })
+    // @GetMapping("/dashboard")
+    // public ResponseEntity<DashboardResponse> dashboard(){
+
+    //     return ResponseEntity.ok(interviewService.getDashboard());
+    // }
 }
+
