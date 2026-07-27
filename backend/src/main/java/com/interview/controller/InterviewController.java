@@ -12,6 +12,7 @@ import com.interview.dto.StartInterviewResponse;
 import com.interview.dto.SubmitAnswerRequest;
 import com.interview.dto.interview.InterviewSummaryResponse;
 import com.interview.dto.interview.NextQuestionResponse;
+import com.interview.dto.interview.SubmitAnswerResponse;
 import com.interview.dto.response.DashboardResponse;
 import com.interview.service.InterviewService;
 
@@ -81,10 +82,10 @@ public class InterviewController {
         @ApiResponse(responseCode = "404", description = "Questions not found")
     })
     @PostMapping("/questions/{questionId}/answer")
-    public String submitAnswer(@PathVariable Long questionId, @Valid @RequestBody SubmitAnswerRequest request){
-        interviewService.submitAnswer(questionId, request);
+    public SubmitAnswerResponse submitAnswer(@PathVariable Long questionId, @Valid @RequestBody SubmitAnswerRequest request){
+        
+        return interviewService.submitAnswer(questionId, request);
 
-        return "Answer Submitted successfully";
     }
 
     // @PostMapping("/{sessionId}/complete")
